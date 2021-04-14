@@ -11,7 +11,7 @@ type
     StartingLcn: LARGE_INTEGER;
     ClusterCount: Winapi.Windows.DWORD;
   end;
-  PMOVE_FILE_Data = ^MOVE_FILE_DATA;
+  PMOVE_FILE_DATA = ^MOVE_FILE_DATA;
   TMoveFileData = MOVE_FILE_DATA;
   PMoveFileData = ^TMoveFileData;
 
@@ -64,7 +64,6 @@ type
       2: (BufferUInt32: array[0..0] of UInt32);
       3: (BufferUInt64: array[0..0] of UInt64);
   end;
-
   PVOLUME_BITMAP_BUFFER = ^VOLUME_BITMAP_BUFFER;
   TVolumeBitmapBuffer = VOLUME_BITMAP_BUFFER;
   PVolumeBitmapBuffer = ^TVolumeBitmapBuffer;
@@ -76,6 +75,7 @@ type
     class operator Initialize(out Dest: _GET_DISK_ATTRIBUTES);
   end;
   GET_DISK_ATTRIBUTES = _GET_DISK_ATTRIBUTES;
+  PGET_DISK_ATTRIBUTES = ^GET_DISK_ATTRIBUTES;
 
   DISK_CLUSTER_INFO = record
     Version: ULONG;
@@ -84,6 +84,7 @@ type
     Notify: LongBool;
     class operator Initialize(out Dest: DISK_CLUSTER_INFO);
   end;
+  PDISK_CLUSTER_INFO = ^DISK_CLUSTER_INFO;
 
   _DISK_EXTENT = record
     DiskNumber: DWORD;
@@ -128,22 +129,27 @@ type
   STARTING_LCN_INPUT_BUFFER = record
     StartingLcn: LARGE_INTEGER;
   end;
+  PSTARTING_LCN_INPUT_BUFFER = ^STARTING_LCN_INPUT_BUFFER;
   TStartingLcnInputBuffer = STARTING_LCN_INPUT_BUFFER;
   PStartingLcnInputBuffer = ^TStartingLcnInputBuffer;
 
   STARTING_VCN_INPUT_BUFFER = record
     StartingVcn: LARGE_INTEGER;
   end;
+  PSTARTING_VCN_INPUT_BUFFER = ^STARTING_VCN_INPUT_BUFFER;
   TStartingVcnInputBuffer = STARTING_VCN_INPUT_BUFFER;
   PStartingVcnInputBuffer = ^TStartingVcnInputBuffer;
 
-  function GetVolumeBitmapBuffer: PVolumeBitmapBuffer;
+{$MESSAGE WARN 'Check definition!!! Incomplete!!!'}
+  RETRIEVAL_POINTERS_BUFFER = record
+    ExtentCount: DWORD;
+    StartingVcn: LARGE_INTEGER;
+    NextVcn: LARGE_INTEGER;
+    Lcn: LARGE_INTEGER;
+  end;
+  PRETRIEVAL_POINTERS_BUFFER = ^RETRIEVAL_POINTERS_BUFFER;
 
 implementation
-
-function GetVolumeBitmapBuffer: PVolumeBitmapBuffer;
-begin
-end;
 
 { _GET_DISK_ATTRIBUTES }
 

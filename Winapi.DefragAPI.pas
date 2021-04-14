@@ -43,38 +43,44 @@ begin
 end;
 
 function TDrive.FindFirstClustersFree(NumFree: UInt64;
+  // valid only when function returns True
   out VFoundStartingCluster: UInt64): Boolean;
 type
   PWordArray = ^TWordArray;
   TWordArray = array[0..536870910] of UInt32;
 var
   LVolumeBitmap: PWordArray;
-  LHi: UInt64;
+  LHi, LFreeCount: UInt64;
 begin
   LVolumeBitmap := @FVolumeBitmap[0];
   LHi := (Length(FVolumeBitmap) div 4)-1;
-  Result := False;
-  for var I := 0 to LHi do
-    begin
-      if LVolumeBitmap[I] <> $FFFFFFFF then
-        begin
-          var LCount: UInt64 := 0;
-          Result := True;
-          for var J := I to I+(NumFree div 4) do
-            begin
-              if LVolumeBitmap[J] <> 0 then
-                begin
-                  Result := False;
-                  Break;
-                end;
-              Inc(LCount);
-            end;
-          if Result then
-            begin
-              Break;
-            end;
-        end;
-    end;
+  try
+    for var I := 0 to LHi do
+      begin
+        if LVolumeBitmap[I] <> $FFFFFFFF then
+          begin
+            LFreeCount := 0;
+            Result := True;
+            VFoundStartingCluster := I;
+            // This might exceed the actual range allocated
+            for var J := I to I+(NumFree div 4) do
+              begin
+                if LVolumeBitmap[J] <> 0 then
+                  begin
+                    Result := False;
+                    Break;
+                  end;
+                Inc(LFreeCount, SizeOf(LVolumeBitmap[0])*8);
+              end;
+            if Result then
+              begin
+                Break;
+              end;
+          end;
+      end;
+  except
+  end;
+  Result := LFreeCount >= NumFree;
 end;
 
 procedure TDrive.GetClusterInfo;
@@ -102,6 +108,7 @@ begin
     LBytesReturned, lpOverlapped);
 end;
 
+{$MESSAGE WARN 'Incomplete GetFileFragments!'}
 procedure TDrive.GetFileFragments(const AFileName: string);
 begin
 
@@ -221,9 +228,11 @@ begin
     @FileSystemFlags, PChar(LFileSystemNameBuffer), Length(LFileSystemNameBuffer)-1);
 
   LVolumeName := PChar(LVolumeNameBuffer);
+  // this would return NTFS, exFAT, FAT, UFS, etc...
   LFileSystemName := PChar(LFileSystemNameBuffer);
 end;
 
+{$MESSAGE WARN 'Incomplete MoveFileFragment!'}
 procedure TDrive.MoveFileFragment;
 var
   lpInBuffer: Pointer;
