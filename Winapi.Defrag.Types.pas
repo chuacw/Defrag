@@ -49,7 +49,7 @@ type
     FileNameLength: WORD;
     FileNameOffset: WORD;
     FileName: array[0..0] of WCHAR;
-    class function Alloc(AFileNameLength: DWORD): PUSN_RECORD_V2; static;
+    class function Alloc(const AFileNameLength: WORD): PUSN_RECORD_V2; static;
   end;
 
   FILE_ID_128 = record
@@ -73,7 +73,7 @@ type
     FileNameLength: WORD;
     FileNameOffset: WORD;
     FileName: array[0..0] of WCHAR;
-    class function Alloc(AFileNameLength: DWORD): PUSN_RECORD_V3; static;
+    class function Alloc(const AFileNameLength: DWORD): PUSN_RECORD_V3; static;
   end;
 
   USN_RECORD_COMMON_HEADER = record
@@ -101,7 +101,7 @@ type
     NumberOfExtents: WORD;
     ExtentSize: WORD;
     Extents: array[0..0] of USN_RECORD_EXTENT;
-    class function Alloc(ANumberOfExtents: WORD): PUSN_RECORD_V4; static;
+    class function Alloc(const ANumberOfExtents: WORD): PUSN_RECORD_V4; static;
   end;
 
   TWords = TArray<Word>;
@@ -111,7 +111,7 @@ type
   VOLUME_BITMAP_BUFFER = record
     StartingLcn: LARGE_INTEGER;
     BitmapSize: LARGE_INTEGER;
-    class function Alloc(BufferLen: DWORD): PVOLUME_BITMAP_BUFFER; static;
+    class function Alloc(const BufferLen: DWORD): PVOLUME_BITMAP_BUFFER; static;
     // The following is free flow, hence the Alloc method
     case Byte of
       0: (Buffer: array[0..0] of Byte); // array of Bytes, not just 1 byte!!!!
@@ -211,21 +211,21 @@ type
     ExtentCount: DWORD;
     StartingVcn: LARGE_INTEGER;
     Extents: array[0..0] of EXTENT; // This is free flow
-    class function Alloc(ExtentCount: DWORD): PRETRIEVAL_POINTERS_BUFFER; static;
+    class function Alloc(const ExtentCount: DWORD): PRETRIEVAL_POINTERS_BUFFER; static;
   end;
 
 implementation
 
 { USN_RECORD_V2 }
 
-class function USN_RECORD_V2.Alloc(AFileNameLength: DWORD): PUSN_RECORD_V2;
+class function USN_RECORD_V2.Alloc(const AFileNameLength: WORD): PUSN_RECORD_V2;
 begin
   GetMem(Result, SizeOf(USN_RECORD_V2) + AFileNameLength - SizeOf(WCHAR));
   Result.FileNameLength := AFileNameLength;
   Result.FileNameOffset := NativeUInt(@Result.FileName) - NativeUInt(Result);
 end;
 
-class function USN_RECORD_V3.Alloc(AFileNameLength: DWORD): PUSN_RECORD_V3;
+class function USN_RECORD_V3.Alloc(const AFileNameLength: DWORD): PUSN_RECORD_V3;
 begin
   GetMem(Result, SizeOf(USN_RECORD_V3) + AFileNameLength - SizeOf(WCHAR));
   Result.FileNameLength := AFileNameLength;
@@ -242,7 +242,7 @@ end;
 //    RemainingExtents: DWORD;
 //    NumberOfExtents: WORD;
 //    ExtentSize: WORD;
-class function USN_RECORD_V4.Alloc(ANumberOfExtents: WORD): PUSN_RECORD_V4;
+class function USN_RECORD_V4.Alloc(const ANumberOfExtents: WORD): PUSN_RECORD_V4;
 begin
   GetMem(Result, SizeOf(USN_RECORD_V4) +
                  ((ANumberOfExtents-1) * SizeOf(USN_RECORD_EXTENT))
@@ -285,7 +285,7 @@ end;
 
 { RETRIEVAL_POINTERS_BUFFER }
 
-class function RETRIEVAL_POINTERS_BUFFER.Alloc(ExtentCount: DWORD): PRETRIEVAL_POINTERS_BUFFER;
+class function RETRIEVAL_POINTERS_BUFFER.Alloc(const ExtentCount: DWORD): PRETRIEVAL_POINTERS_BUFFER;
 begin
   GetMem(Result, SizeOf(RETRIEVAL_POINTERS_BUFFER) +
                  // For Extents: remove the built-in array[0..0] of X
@@ -296,7 +296,7 @@ end;
 
 { VOLUME_BITMAP_BUFFER }
 
-class function VOLUME_BITMAP_BUFFER.Alloc(BufferLen: DWORD): PVOLUME_BITMAP_BUFFER;
+class function VOLUME_BITMAP_BUFFER.Alloc(const BufferLen: DWORD): PVOLUME_BITMAP_BUFFER;
 begin
   GetMem(Result, SizeOf(VOLUME_BITMAP_BUFFER) +
                  (BufferLen - SizeOf(Byte))
