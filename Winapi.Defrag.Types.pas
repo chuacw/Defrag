@@ -76,6 +76,8 @@ type
   end;
   GET_DISK_ATTRIBUTES = _GET_DISK_ATTRIBUTES;
   PGET_DISK_ATTRIBUTES = ^GET_DISK_ATTRIBUTES;
+  TGetDiskAttributes = GET_DISK_ATTRIBUTES;
+  PGetDiskAttributes = ^TGetDiskAttributes;
 
   DISK_CLUSTER_INFO = record
     Version: ULONG;
@@ -85,6 +87,8 @@ type
     class operator Initialize(out Dest: DISK_CLUSTER_INFO);
   end;
   PDISK_CLUSTER_INFO = ^DISK_CLUSTER_INFO;
+  TDiskClusterInfo = DISK_CLUSTER_INFO;
+  PDiskClusterInfo = ^TDiskClusterInfo;
 
   _DISK_EXTENT = record
     DiskNumber: DWORD;

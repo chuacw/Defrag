@@ -1,7 +1,8 @@
 unit Winapi.Defrag;
 
 interface
-uses Winapi.Windows;
+uses
+  Winapi.Windows;
 
 function GetVolumeHandle(const Drive: Char): THandle;
 function CloseHandle(AHandle: THandle): Boolean;

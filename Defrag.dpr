@@ -22,6 +22,18 @@ begin
   end;
 end;
 
+procedure DefragVolume;
+var
+  LVolume: TVolume;
 begin
-  DefragMain;
+  LVolume := TVolume.Create('K');
+  try
+
+  finally
+    LVolume.Free;
+  end;
+end;
+
+begin
+  DefragVolume;
 end.

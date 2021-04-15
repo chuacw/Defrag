@@ -2,7 +2,7 @@ unit Winapi.DefragAPI;
 
 interface
 uses
-  System.SysUtils, Winapi.Defrag.Types;
+  System.Generics.Collections, System.SysUtils, Winapi.Defrag.Types;
 
 type
   TDrive = class
@@ -22,6 +22,64 @@ type
     property VolumeBitmap: TBytes read FVolumeBitmap;
     procedure GetFileFragments(const AFileName: string);
     procedure MoveFileFragment;
+  end;
+
+  TVolumeClass = class of TVolume;
+  TVolume = class
+  protected
+    class var FFileSystemClassTypeMap: TDictionary<string, TVolumeClass>;
+    FVolumeHandle: THandle;
+    FVolumeBitmap: TBytes;
+    FFileSystemName: string;
+    class function GetFileSystemName(const DriveChar: Char): string; static;
+    constructor _Create(const DriveChar: Char); overload;
+  public
+    class constructor Create;
+    class destructor Destroy;
+
+    class function Create(const DriveChar: Char): TVolume; overload; static;
+    destructor Destroy; override;
+  end;
+
+//  FFileSystemClassTypeMap.Add('CDFS', TCDFSVolume);
+//  FFileSystemClassTypeMap.Add('EXFAT', TexFATVolume);
+//  FFileSystemClassTypeMap.Add('FAT', TFATVolume);
+//  FFileSystemClassTypeMap.Add('FAT32', TFAT32Volume);
+//  FFileSystemClassTypeMap.Add('HPFS', THPFSVolume);
+//  FFileSystemClassTypeMap.Add('NTFS', TNTFSVolume);
+//  FFileSystemClassTypeMap.Add('NWFS', TNWFSVolume);
+//  FFileSystemClassTypeMap.Add('UFS', TUFSVolume);
+
+  TCDFSVolume = class(TVolume)
+  public
+  end;
+
+  TexFATVolume = class(TVolume)
+  public
+  end;
+
+  TFATVolume = class(TVolume)
+  public
+  end;
+
+  TFAT32Volume = class(TVolume)
+  public
+  end;
+
+  THPFSVolume = class(TVolume)
+  public
+  end;
+
+  TNTFSVolume = class(TVolume)
+  public
+  end;
+
+  TNWFSVolume = class(TVolume)
+  public
+  end;
+
+  TUFSVolume = class(TVolume)
+  public
   end;
 
 implementation
@@ -52,6 +110,7 @@ var
   LVolumeBitmap: PWordArray;
   LHi, LFreeCount: UInt64;
 begin
+  LFreeCount := 0;
   LVolumeBitmap := @FVolumeBitmap[0];
   LHi := (Length(FVolumeBitmap) div 4)-1;
   try
@@ -80,38 +139,38 @@ begin
       end;
   except
   end;
-  Result := LFreeCount >= NumFree;
+  Result := (LFreeCount >= NumFree) and (NumFree > 0);
 end;
 
 procedure TDrive.GetClusterInfo;
 var
-  lpInBuffer: Pointer;
-  nInBufferSize: DWORD;
+  lpInBuffer, lpOutBuffer: Pointer;
+  nInBufferSize, nOutBufferSize: DWORD;
   LDiskClusterInfo: DISK_CLUSTER_INFO;
   LBytesReturned: DWORD;
   lpOverlapped: POverlapped;
-  nOutBufferSize: DWORD;
   LResult: Winapi.Windows.Bool;
 begin
+  var LVolumeHandle := FVolumeHandle;
   lpInBuffer     := nil;
   nInBufferSize  := 0;
   LBytesReturned := 0;
   lpOverlapped   := nil;
+  lpOutBuffer    := @LDiskClusterInfo;
   nOutBufferSize := SizeOf(LDiskClusterInfo);
 
 //function DeviceIoControl(hDevice: THandle; dwIoControlCode: DWORD; lpInBuffer: Pointer;
 //  nInBufferSize: DWORD; lpOutBuffer: Pointer; nOutBufferSize: DWORD;
 //  var lpBytesReturned: DWORD; lpOverlapped: POverlapped): BOOL; stdcall;
 
-  LResult := DeviceIoControl(FVolumeHandle, IOCTL_DISK_GET_CLUSTER_INFO,
-    lpInBuffer, nInBufferSize, @LDiskClusterInfo, nOutBufferSize,
+  LResult := DeviceIoControl(LVolumeHandle, IOCTL_DISK_GET_CLUSTER_INFO,
+    lpInBuffer, nInBufferSize, lpOutBuffer, nOutBufferSize,
     LBytesReturned, lpOverlapped);
 end;
 
 {$MESSAGE WARN 'Incomplete GetFileFragments!'}
 procedure TDrive.GetFileFragments(const AFileName: string);
 begin
-
 end;
 
 function TDrive.GetNTFSVolumeData: TNTFSVolumeDataBuffer;
@@ -122,20 +181,21 @@ end;
 procedure TDrive._GetNTFSVolumeData(out VNTFSVolumeDataBuffer: TNTFSVolumeDataBuffer);
 var
   LResult: Bool;
-  lpInBuffer: Pointer;
-  nInBufferSize: DWORD;
-  lpOutBuffer: Pointer;
+  lpInBuffer, lpOutBuffer: Pointer;
+  nInBufferSize, nOutBufferSize: DWORD;
   LBytesReturned: DWORD;
   lpOverlapped: POverlapped;
 
 begin
-  lpInBuffer    := nil;
-  nInBufferSize := 0;
-  lpOutBuffer   := @VNTFSVolumeDataBuffer;
+  lpInBuffer     := nil;
+  nInBufferSize  := 0;
+  lpOutBuffer    := @VNTFSVolumeDataBuffer;
+  nOutBufferSize := SizeOf(VNTFSVolumeDataBuffer);
+  lpOverlapped   := nil;
 
   LResult := DeviceIoControl(FVolumeHandle, FSCTL_GET_NTFS_VOLUME_DATA,
-    lpInBuffer, nInBufferSize, lpOutBuffer, SizeOf(VNTFSVolumeDataBuffer),
-    LBytesReturned, @lpOverlapped);
+    lpInBuffer, nInBufferSize, lpOutBuffer, nOutBufferSize,
+    LBytesReturned, lpOverlapped);
 end;
 
 procedure TDrive.GetVolumeBitmap;
@@ -239,19 +299,101 @@ var
   nInBufferSize: DWORD;
   lpOutBuffer: Pointer;
   nOutBufferSize: DWORD;
-  BytesReturned: DWORD;
+  LBytesReturned: DWORD;
   lpOverlapped: POverlapped;
 begin
 //  lpInBuffer := // MOVE_FILE_DATA structure
+  var LVolumeHandle := FVolumeHandle;
+  LBytesReturned := 0;
+  lpOverlapped := nil;
 
-  DeviceIoControl(FVolumeHandle,
+  DeviceIoControl(LVolumeHandle,
     FSCTL_MOVE_FILE,
     lpInBuffer,
     nInBufferSize,
     lpOutBuffer,
     nOutBufferSize,
-    BytesReturned,
+    LBytesReturned,
     lpOverlapped);
+end;
+
+{ TVolume }
+
+class function TVolume.Create(const DriveChar: Char): TVolume;
+var
+  LFileSystemName: string;
+  LClass: TVolumeClass;
+begin
+  Result := nil;
+  LFileSystemName := GetFileSystemName(DriveChar);
+  if FFileSystemClassTypeMap.TryGetValue(LFileSystemName, LClass) then
+    begin
+      Result := LClass._Create(DriveChar);
+      Result.FFileSystemName := LFileSystemName;
+    end;
+end;
+
+destructor TVolume.Destroy;
+begin
+  CloseHandle(FVolumeHandle);
+  inherited;
+end;
+
+class constructor TVolume.Create;
+begin
+  FFileSystemClassTypeMap := TDictionary<string, TVolumeClass>.Create;
+  FFileSystemClassTypeMap.Add('CDFS', TCDFSVolume);
+  FFileSystemClassTypeMap.Add('EXFAT', TexFATVolume);
+  FFileSystemClassTypeMap.Add('FAT', TFATVolume);
+  FFileSystemClassTypeMap.Add('FAT32', TFAT32Volume);
+  FFileSystemClassTypeMap.Add('HPFS', THPFSVolume);
+  FFileSystemClassTypeMap.Add('NTFS', TNTFSVolume);
+  FFileSystemClassTypeMap.Add('NWFS', TNWFSVolume);
+  FFileSystemClassTypeMap.Add('UFS', TUFSVolume);
+end;
+
+constructor TVolume._Create(const DriveChar: Char);
+begin
+  inherited Create;
+  FVolumeHandle := GetVolumeHandle(DriveChar);
+end;
+
+class destructor TVolume.Destroy;
+begin
+  FFileSystemClassTypeMap.Free;
+end;
+
+class function TVolume.GetFileSystemName(const DriveChar: Char): string;
+var
+  LResult: Winapi.Windows.BOOL;
+  LVolumeName, LFileSystemName,
+  LVolumeNameBuffer, LFileSystemNameBuffer: string;
+  LVolumeNameBufferLen, LFileSystemNameBufferLen,
+  lpVolumeSerialNumber: DWORD;
+  VolumeSerialNumber: DWORD;
+  MaximumComponentLength: DWORD;
+  FileSystemFlags: DWORD;
+
+  LVolumeHandle: THandle;
+begin
+  LVolumeHandle := GetVolumeHandle(DriveChar);
+  try
+    SetLength(LVolumeNameBuffer, MAX_PATH+2);
+    SetLength(LFileSystemNameBuffer, MAX_PATH+2);
+    VolumeSerialNumber := 0;
+    FileSystemFlags := 0;
+    LVolumeNameBufferLen := Length(LVolumeNameBuffer)-1;
+    LFileSystemNameBufferLen := Length(LFileSystemNameBuffer)-1;
+
+    LResult := GetVolumeInformationByHandle(LVolumeHandle, PChar(LVolumeNameBuffer),
+      LVolumeNameBufferLen, @VolumeSerialNumber, @MaximumComponentLength,
+      @FileSystemFlags, PChar(LFileSystemNameBuffer), LFileSystemNameBufferLen);
+
+    // this would return NTFS, exFAT, FAT, UFS, etc...
+    Result := UpperCase(PChar(LFileSystemNameBuffer));
+  finally
+    CloseHandle(LVolumeHandle);
+  end;
 end;
 
 end.
