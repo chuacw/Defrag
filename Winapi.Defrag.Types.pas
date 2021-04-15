@@ -233,15 +233,7 @@ begin
 end;
 
 { USN_RECORD_V4 }
-//    Header: USN_RECORD_COMMON_HEADER;
-//    FileReferenceNumber: FILE_ID_128;
-//    ParentFileReferenceNumber: FILE_ID_128;
-//    Usn: TUSN;
-//    Reason: DWORD;
-//    SourceInfo: DWORD;
-//    RemainingExtents: DWORD;
-//    NumberOfExtents: WORD;
-//    ExtentSize: WORD;
+
 class function USN_RECORD_V4.Alloc(const ANumberOfExtents: WORD): PUSN_RECORD_V4;
 begin
   GetMem(Result, SizeOf(USN_RECORD_V4) +
