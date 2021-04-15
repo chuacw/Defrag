@@ -273,7 +273,6 @@ var
   LResult: Winapi.Windows.BOOL;
   LVolumeName, LFileSystemName,
   LVolumeNameBuffer, LFileSystemNameBuffer: string;
-  lpVolumeSerialNumber: DWORD;
   VolumeSerialNumber: DWORD;
   MaximumComponentLength: DWORD;
   FileSystemFlags: DWORD;
@@ -366,10 +365,8 @@ end;
 class function TVolume.GetFileSystemName(const DriveChar: Char): string;
 var
   LResult: Winapi.Windows.BOOL;
-  LVolumeName, LFileSystemName,
   LVolumeNameBuffer, LFileSystemNameBuffer: string;
   LVolumeNameBufferLen, LFileSystemNameBufferLen,
-  lpVolumeSerialNumber: DWORD;
   VolumeSerialNumber: DWORD;
   MaximumComponentLength: DWORD;
   FileSystemFlags: DWORD;
