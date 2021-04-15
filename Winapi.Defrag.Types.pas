@@ -31,7 +31,7 @@ type
   TMarkHandleInfo   = MARK_HANDLE_INFO;
   PMarkHandleInfo   = ^TMarkHandleInfo;
 
-  TUSN = record end; // USN record
+  TUSN = UInt64; // USN record
 
   PUSN_RECORD_V2 = ^USN_RECORD_V2;
   USN_RECORD_V2 = record
@@ -50,6 +50,58 @@ type
     FileNameOffset: WORD;
     FileName: array[0..0] of WCHAR;
     class function Alloc(AFileNameLength: DWORD): PUSN_RECORD_V2; static;
+  end;
+
+  FILE_ID_128 = record
+    Identifier: array[0..15] of BYTE;
+  end;
+  PFILE_ID_128 = ^FILE_ID_128;
+
+  PUSN_RECORD_V3 = ^USN_RECORD_V3;
+  USN_RECORD_V3 = record
+    RecordLength: DWORD;
+    MajorVersion: WORD;
+    MinorVersion: WORD;
+    FileReferenceNumber: FILE_ID_128;
+    ParentFileReferenceNumber: FILE_ID_128;
+    Usn: TUSN;
+    TimeStamp: LARGE_INTEGER;
+    Reason: DWORD;
+    SourceInfo: DWORD;
+    SecurityId: DWORD;
+    FileAttributes: DWORD;
+    FileNameLength: WORD;
+    FileNameOffset: WORD;
+    FileName: array[0..0] of WCHAR;
+    class function Alloc(AFileNameLength: DWORD): PUSN_RECORD_V3; static;
+  end;
+
+  USN_RECORD_COMMON_HEADER = record
+    RecordLength: DWORD;
+    MajorVersion: WORD;
+    MinorVersion: WORD;
+  end;
+  PUSN_RECORD_COMMON_HEADER = ^USN_RECORD_COMMON_HEADER;
+
+  USN_RECORD_EXTENT = record
+    Offset: LONGLONG;
+    Length: LONGLONG;
+  end;
+  PUSN_RECORD_EXTENT = ^USN_RECORD_EXTENT;
+
+  PUSN_RECORD_V4 = ^USN_RECORD_V4;
+  USN_RECORD_V4 = record
+    Header: USN_RECORD_COMMON_HEADER;
+    FileReferenceNumber: FILE_ID_128;
+    ParentFileReferenceNumber: FILE_ID_128;
+    Usn: TUSN;
+    Reason: DWORD;
+    SourceInfo: DWORD;
+    RemainingExtents: DWORD;
+    NumberOfExtents: WORD;
+    ExtentSize: WORD;
+    Extents: array[0..0] of USN_RECORD_EXTENT;
+    class function Alloc(ANumberOfExtents: WORD): PUSN_RECORD_V4; static;
   end;
 
   TWords = TArray<Word>;
@@ -173,6 +225,31 @@ begin
   Result.FileNameOffset := NativeUInt(@Result.FileName) - NativeUInt(Result);
 end;
 
+class function USN_RECORD_V3.Alloc(AFileNameLength: DWORD): PUSN_RECORD_V3;
+begin
+  GetMem(Result, SizeOf(USN_RECORD_V3) + AFileNameLength - SizeOf(WCHAR));
+  Result.FileNameLength := AFileNameLength;
+  Result.FileNameOffset := NativeUInt(@Result.FileName) - NativeUInt(Result);
+end;
+
+{ USN_RECORD_V4 }
+//    Header: USN_RECORD_COMMON_HEADER;
+//    FileReferenceNumber: FILE_ID_128;
+//    ParentFileReferenceNumber: FILE_ID_128;
+//    Usn: TUSN;
+//    Reason: DWORD;
+//    SourceInfo: DWORD;
+//    RemainingExtents: DWORD;
+//    NumberOfExtents: WORD;
+//    ExtentSize: WORD;
+class function USN_RECORD_V4.Alloc(ANumberOfExtents: WORD): PUSN_RECORD_V4;
+begin
+  GetMem(Result, SizeOf(USN_RECORD_V4) +
+                 ((ANumberOfExtents-1) * SizeOf(USN_RECORD_EXTENT))
+  );
+  Result.NumberOfExtents := ANumberOfExtents;
+end;
+
 { _GET_DISK_ATTRIBUTES }
 
 class operator _GET_DISK_ATTRIBUTES.Initialize(out Dest: _GET_DISK_ATTRIBUTES);
@@ -202,15 +279,18 @@ end;
 class function _VOLUME_DISK_EXTENTS.Alloc(ExtentCount: DWORD): PVOLUME_DISK_EXTENTS;
 begin
   GetMem(Result, SizeOf(VOLUME_DISK_EXTENTS) +
-    (SizeOf(DISK_EXTENT) * (ExtentCount-1)));
+                 (SizeOf(DISK_EXTENT) * (ExtentCount-1))
+  );
 end;
 
 { RETRIEVAL_POINTERS_BUFFER }
 
 class function RETRIEVAL_POINTERS_BUFFER.Alloc(ExtentCount: DWORD): PRETRIEVAL_POINTERS_BUFFER;
 begin
-  GetMem(Result, SizeOf(RETRIEVAL_POINTERS_BUFFER) + // Extents
-    (SizeOf(EXTENT) * (ExtentCount-1))); // remove the built-in array[0..0] of X
+  GetMem(Result, SizeOf(RETRIEVAL_POINTERS_BUFFER) +
+                 // For Extents: remove the built-in array[0..0] of X
+                 (SizeOf(EXTENT) * (ExtentCount-1))
+  );
   Result.ExtentCount := ExtentCount;
 end;
 
@@ -218,7 +298,9 @@ end;
 
 class function VOLUME_BITMAP_BUFFER.Alloc(BufferLen: DWORD): PVOLUME_BITMAP_BUFFER;
 begin
-  GetMem(Result, SizeOf(VOLUME_BITMAP_BUFFER) + (BufferLen - SizeOf(Byte)));
+  GetMem(Result, SizeOf(VOLUME_BITMAP_BUFFER) +
+                 (BufferLen - SizeOf(Byte))
+  );
 end;
 
 end.
