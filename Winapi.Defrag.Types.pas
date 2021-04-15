@@ -133,6 +133,20 @@ type
   TGetDiskAttributes   = GET_DISK_ATTRIBUTES;
   PGetDiskAttributes   = ^TGetDiskAttributes;
 
+  _SET_DISK_ATTRIBUTES = record
+    Version: DWORD;
+    Persist: BOOLEAN;
+    Reserved1: array[0..3] of BYTE;
+    Attributes: DWORDLONG;
+    AttributesMask: DWORDLONG;
+    Reserved2: array[0..3] of DWORD;
+    class operator Initialize(out Dest: _SET_DISK_ATTRIBUTES);
+  end;
+  SET_DISK_ATTRIBUTES = _SET_DISK_ATTRIBUTES;
+  PSET_DISK_ATTRIBUTES = ^SET_DISK_ATTRIBUTES;
+  TSetDiskAttributes = SET_DISK_ATTRIBUTES;
+  PSetDiskAttributes = ^TSetDiskAttributes;
+
   DISK_CLUSTER_INFO = record
     Version: ULONG;
     Flags: ULONGLONG;
@@ -245,6 +259,14 @@ end;
 { _GET_DISK_ATTRIBUTES }
 
 class operator _GET_DISK_ATTRIBUTES.Initialize(out Dest: _GET_DISK_ATTRIBUTES);
+begin
+  FillChar(Dest, SizeOf(Dest), 0);
+  Dest.Version := SizeOf(Dest);
+end;
+
+{ _SET_DISK_ATTRIBUTES }
+
+class operator _SET_DISK_ATTRIBUTES.Initialize(out Dest: _SET_DISK_ATTRIBUTES);
 begin
   FillChar(Dest, SizeOf(Dest), 0);
   Dest.Version := SizeOf(Dest);
