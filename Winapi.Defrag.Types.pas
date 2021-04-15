@@ -33,6 +33,7 @@ type
 
   TUSN = record end; // USN record
 
+  PUSN_RECORD_V2 = ^USN_RECORD_V2;
   USN_RECORD_V2 = record
     RecordLength: DWORD;
     MajorVersion: WORD;
@@ -48,8 +49,8 @@ type
     FileNameLength: WORD;
     FileNameOffset: WORD;
     FileName: array[0..0] of WCHAR;
+    class function Alloc(AFileNameLength: DWORD): PUSN_RECORD_V2; static;
   end;
-  PUSN_RECORD_V2 = ^USN_RECORD_V2;
 
   TWords = TArray<Word>;
   TWord = Word;
@@ -162,6 +163,15 @@ type
   end;
 
 implementation
+
+{ USN_RECORD_V2 }
+
+class function USN_RECORD_V2.Alloc(AFileNameLength: DWORD): PUSN_RECORD_V2;
+begin
+  GetMem(Result, SizeOf(USN_RECORD_V2) + AFileNameLength - SizeOf(WCHAR));
+  Result.FileNameLength := AFileNameLength;
+  Result.FileNameOffset := NativeUInt(@Result.FileName) - NativeUInt(Result);
+end;
 
 { _GET_DISK_ATTRIBUTES }
 
