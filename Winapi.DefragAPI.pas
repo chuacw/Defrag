@@ -351,15 +351,15 @@ begin
   FFileSystemClassTypeMap.Add('UFS', TUFSVolume);
 end;
 
+class destructor TVolume.Destroy;
+begin
+  FFileSystemClassTypeMap.Free;
+end;
+
 constructor TVolume._Create(const DriveChar: Char);
 begin
   inherited Create;
   FVolumeHandle := GetVolumeHandle(DriveChar);
-end;
-
-class destructor TVolume.Destroy;
-begin
-  FFileSystemClassTypeMap.Free;
 end;
 
 class function TVolume.GetFileSystemName(const DriveChar: Char): string;
@@ -372,6 +372,7 @@ var
   FileSystemFlags: DWORD;
 
   LVolumeHandle: THandle;
+  lpInBuffer: PChar;
 begin
   LVolumeHandle := GetVolumeHandle(DriveChar);
   try
@@ -382,12 +383,16 @@ begin
     LVolumeNameBufferLen := Length(LVolumeNameBuffer)-1;
     LFileSystemNameBufferLen := Length(LFileSystemNameBuffer)-1;
 
+    lpInBuffer := PChar(LFileSystemNameBuffer);
+
     LResult := GetVolumeInformationByHandle(LVolumeHandle, PChar(LVolumeNameBuffer),
       LVolumeNameBufferLen, @VolumeSerialNumber, @MaximumComponentLength,
-      @FileSystemFlags, PChar(LFileSystemNameBuffer), LFileSystemNameBufferLen);
+      @FileSystemFlags, lpInBuffer, LFileSystemNameBufferLen);
+
+    SetLength(LFileSystemNameBuffer, StrLen(lpInBuffer));
 
     // this would return NTFS, exFAT, FAT, UFS, etc...
-    Result := UpperCase(PChar(LFileSystemNameBuffer));
+    Result := UpperCase(LFileSystemNameBuffer);
   finally
     CloseHandle(LVolumeHandle);
   end;

@@ -1,8 +1,6 @@
 unit Winapi.Defrag;
 
 interface
-uses
-  Winapi.Windows;
 
 function GetVolumeHandle(const Drive: Char): THandle;
 function CloseHandle(AHandle: THandle): Boolean;
@@ -10,7 +8,7 @@ function GetPhysicalDriveIdentifier(const Drive: Char): string;
 
 implementation
 uses
-  System.SysUtils, Winapi.Defrag.Consts;
+  Winapi.Windows, System.SysUtils, Winapi.Defrag.Consts;
 
 function CloseHandle(AHandle: THandle): Boolean;
 begin
